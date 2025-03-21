@@ -1,0 +1,5 @@
+ResourceType: 0x033B2B66
+Label: KDTR Preview
+Command: Helpers\ModelViewer\ModelViewer.exe
+Arguments: "{}"
+Desc: 3d Preview of KDTR

@@ -72,23 +72,33 @@ namespace s4pi.GenericRCOLResource
 
         protected override void Parse(Stream s)
         {
-            BinaryReader r = new BinaryReader(s);
+            using (var ms = File.Create(@"d:\scratch\ts4\dumped_kdtree.bin"))
+            {
+                s.CopyTo(ms); // This ends up being the same as what s4s dumps minus the front 0x28 bytes
+                s.Seek(0, SeekOrigin.Begin);
+                BinaryReader r = new BinaryReader(s);
+                version = r.ReadUInt32();
+                bool readTwice = false;
+                if (version == 0)
+                {
+                    version = r.ReadUInt32();// <format=hex>
+                    readTwice = true;
+                }
+                if (checking) if (version != 0x100)
+                        throw new InvalidDataException(String.Format("Unsupported version read: '0x{0:X8}'; expected: '0x00000100'; at 0x{1:X8} (read twice: {})", version, s.Position, readTwice));
 
-            version = r.ReadUInt32();// <format=hex>
-            if (checking) if (version != 0x100)
-                    throw new InvalidDataException(String.Format("Unsupported version read: '0x{0:X8}'; expected: '0x00000100'; at 0x{1:X8}", version, s.Position));
-
-            UInt32 nodeCount = r.ReadUInt32();
-            UInt32 vertCount = r.ReadUInt32();
-            UInt32 indexCount = r.ReadUInt32();
-            scaleX = r.ReadSingle();
-            scaleY = r.ReadSingle();
-            scaleZ = r.ReadSingle();
-            bboxMin = new Vert(requestedApiVersion, handler, s);
-            bboxMax = new Vert(requestedApiVersion, handler, s);
-            nodes = new NodeList(handler, s, nodeCount);
-            verts = new VertList(handler, s, vertCount);
-            indices = new CountedUInt16List(handler, s, indexCount);
+                UInt32 nodeCount = r.ReadUInt32();
+                UInt32 vertCount = r.ReadUInt32();
+                UInt32 indexCount = r.ReadUInt32();
+                scaleX = r.ReadSingle();
+                scaleY = r.ReadSingle();
+                scaleZ = r.ReadSingle();
+                bboxMin = new Vert(requestedApiVersion, handler, s);
+                bboxMax = new Vert(requestedApiVersion, handler, s);
+                nodes = new NodeList(handler, s, nodeCount);
+                verts = new VertList(handler, s, vertCount);
+                indices = new CountedUInt16List(handler, s, indexCount);
+            }
         }
 
         public override Stream UnParse()

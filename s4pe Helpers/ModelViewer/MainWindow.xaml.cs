@@ -101,6 +101,22 @@ namespace s3piwrappers.ModelViewer
             }
         }
 
+        private class SceneKDTreeMesh : SceneMesh
+        {
+            public SceneKDTreeMesh(KDTree kdt, GeometryModel3D model)
+                : base(model)
+            {
+                KDTree = kdt;
+            }
+
+            public KDTree KDTree { get; set; }
+
+            public override string ToString()
+            {
+                return "KDTree Mesh";
+            }
+        }
+
         private readonly List<SceneMesh> mSceneMeshes;
         private SceneMesh mSelectedMesh;
         private readonly GenericRCOLResource rcol;
@@ -257,15 +273,14 @@ Rotate:
         private void InitScene()
         {
             GeostatesPanel.Visibility = Visibility.Collapsed;
-            GenericRCOLResource.ChunkEntry chunk = rcol.ChunkEntries.FirstOrDefault(x => x.RCOLBlock is MLOD);
+            GenericRCOLResource.ChunkEntry firstChunk = rcol.ChunkEntries.FirstOrDefault();// x => x.RCOLBlock is MLOD);
 
             int polyCount = 0;
             int vertCount = 0;
 
 
-            if (chunk != null)
+            if (firstChunk.RCOLBlock is MLOD mlod)
             {
-                var mlod = chunk.RCOLBlock as MLOD;
                 foreach (MLOD.Mesh m in mlod.Meshes)
                 {
                     try
@@ -333,6 +348,28 @@ Rotate:
                     }
                 }
             }
+            else if (firstChunk.RCOLBlock is KDTree kdtree)
+            {
+                List<Vertex> vertices = new List<Vertex>();
+                foreach (var v in kdtree.Verts)
+                {
+                    var vertex = new Vertex
+                    {
+                        Position = new[] {
+                            v.X * kdtree.ScaleX,
+                            v.Y * kdtree.ScaleY,
+                            v.Z * kdtree.ScaleZ,
+                        },
+                    };
+                    vertices.Add(vertex);
+                }
+
+                GeometryModel3D model = DrawModel(vertices.ToArray(), kdtree.Indices.ToArray().Select(i => (int)i).ToArray(), mNonSelectedMaterial);
+
+                var sceneMesh = new SceneKDTreeMesh(kdtree, model);
+                mGroupMeshes.Children.Add(model);
+                mSceneMeshes.Add(sceneMesh);
+            }
             else
             {
                 GenericRCOLResource.ChunkEntry geomChunk = rcol.ChunkEntries.FirstOrDefault();
@@ -344,24 +381,24 @@ Rotate:
                 {
                     var v = new Vertex();
 
-                    var pos = (GEOM.PositionElement) vd.Vertex.FirstOrDefault(e => e is GEOM.PositionElement);
+                    var pos = (GEOM.PositionElement)vd.Vertex.FirstOrDefault(e => e is GEOM.PositionElement);
                     if (pos != null)
                     {
-                        v.Position = new[] {pos.X, pos.Y, pos.Z};
+                        v.Position = new[] { pos.X, pos.Y, pos.Z };
                     }
 
 
-                    var norm = (GEOM.NormalElement) vd.Vertex.FirstOrDefault(e => e is GEOM.NormalElement);
+                    var norm = (GEOM.NormalElement)vd.Vertex.FirstOrDefault(e => e is GEOM.NormalElement);
                     if (norm != null)
                     {
-                        v.Normal = new[] {norm.X, norm.Y, norm.Z};
+                        v.Normal = new[] { norm.X, norm.Y, norm.Z };
                     }
 
 
-                    var uv = (GEOM.UVElement) vd.Vertex.FirstOrDefault(e => e is GEOM.UVElement);
+                    var uv = (GEOM.UVElement)vd.Vertex.FirstOrDefault(e => e is GEOM.UVElement);
                     if (uv != null)
                     {
-                        v.UV = new[] {new[] {uv.U, uv.V}};
+                        v.UV = new[] { new[] { uv.U, uv.V } };
                     }
                     verts.Add(v);
                 }

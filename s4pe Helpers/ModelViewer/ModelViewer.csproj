@@ -98,6 +98,9 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="KDTRViewer.helper">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="GEOMViewer.helper">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
